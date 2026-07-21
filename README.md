@@ -30,7 +30,7 @@ scoped admin role
 
 ----
 ## Operations
-See [runbook.md] for the full operational guide: how each lifecycle event runs, what is automated versus manual, and what evidence each step produces.
+See [runbook.md](runbook.md) for the full operational guide: how each lifecycle event runs, what is automated versus manual, and what evidence each step produces.
 
 ## Honest framing
 Training build in a free Okta Integrator org on a fictional scenario.
