@@ -23,7 +23,7 @@ access removed, timestamped log entry
 - [Hardening](evidence/04-hardening): MFA enforcement, password policy,
 scoped admin role
 ## Operations
-See runbook.md for the full operational guide: how each lifecycle event runs, what is automated versus manual, and what evidence each step produces
+See https://github.com/Tawelba/okta-jml-lifecycle/blob/main/runbook.md for the full operational guide: how each lifecycle event runs, what is automated versus manual, and what evidence each step produces
 ## Honest framing
 Training build in a free Okta Integrator org on a fictional scenario.
 Bookmark apps stand in for federated apps: assignment logic is identical,
