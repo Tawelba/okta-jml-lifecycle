@@ -45,7 +45,6 @@ The applications used in this lab are Okta Bookmark Apps. They represent busines
  |Super Administrator      | Maintains Okta configuration, policies, group rules, applications, and administrative roles |
  |Line manager             | Confirms that the user’s department and required access are correct                         |
  |Security or audit team   | Reviews Okta System Log evidence and lifecycle-control effectiveness                        |
- |-------------------------|---------------------------------------------------------------------------------------------|
 
 In this lab, the IAM administrator performs the HR-triggered profile changes manually. In a production environment, the changes would normally originate from an authoritative HR system.
 ---
@@ -287,3 +286,8 @@ evidence/
 ├── 02-mover/
 ├── 03-leaver/
 └── 04-hardening/
+```
+
+Data: 21/07/2026 Author: Shaibu Fuseini
+
+
