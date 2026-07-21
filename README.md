@@ -41,6 +41,6 @@ The automation, policies, and audit trail are real Okta
 
 ----
 
-Built by: Shaibu Fuseini    [Shaibu Fuseini](linkedin.com)
+Built by: Shaibu Fuseini    [linkedin.com](Shaibu-Fuseini)
 
 
