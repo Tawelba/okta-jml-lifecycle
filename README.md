@@ -1,10 +1,13 @@
 # okta-jml-lifecycle
+----
 I built an automated joiner-mover-leaver identity lifecycle in a free Okta
 org, modelled on a fictional bank (Meridian Trust Bank). Access is never
 assigned to people: apps bind to groups, group rules place people in groups
 from their HR attributes, and the lifecycle runs itself. The moment that
 sold me on identity engineering: I changed one department field and watched
 payment-system access revoke itself, with an audit log entry to prove it.
+
+----
 ## What this demonstrates
 - Role-based access via groups and group-bound application assignment
 - Attribute-driven group rules (HR-driven provisioning pattern)
@@ -13,6 +16,8 @@ deactivation with session kill
 - MFA enrollment policy and hardened password policy
 - Least-privilege delegated administration
 - Audit evidence for every lifecycle event from the Okta System Log
+
+----
 ## The lifecycle, evidenced
 - [Joiner](evidence/01-joiner): user created with role attributes, correct
 access appeared with zero manual assignment
@@ -22,6 +27,8 @@ new access granted automatically
 access removed, timestamped log entry
 - [Hardening](evidence/04-hardening): MFA enforcement, password policy,
 scoped admin role
+
+----
 ## Operations
 See https://github.com/Tawelba/okta-jml-lifecycle/blob/main/runbook.md for the full operational guide: how each lifecycle event runs, what is automated versus manual, and what evidence each step produces
 ## Honest framing
@@ -30,3 +37,23 @@ Bookmark apps stand in for federated apps: assignment logic is identical,
 SAML/SCIM federation requires control of the target application. In
 production, the attribute changes I made by hand arrive from the HR system.
 The automation, policies, and audit trail are real Okta
+
+----
+Architecture
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   HR Attribute  │────▶│   Group Rules   │────▶│  Group Membership│
+│  (department)   │     │ (Rule-Lending,  │     │ (Dept-Lending,   │
+│                 │     │  Rule-Payments, │     │  Dept-Payments,  │
+│                 │     │  Rule-AllStaff) │     │  All-Staff)      │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                                              ┌─────────────────┐
+                                              │ App Assignments │
+                                              │ (OriginateCloud,│
+                                              │  PaySuite,      │
+                                              │  Meridian       │
+                                              │  Intranet)      │
+                                              └─────────────────┘
+                                              
+Built by:Shaibu Fuseini  https://www.linkedin.com/in/shaibu-fuseini
