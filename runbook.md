@@ -1,14 +1,13 @@
 # Identity Lifecycle Runbook: Meridian Trust Bank
 
 ## 1. Purpose
-This runbook describes how Meridian Trust Bank manages the identity lifecycle of employees in Okta.
+This document describes how Meridian Trust Bank's joiner-mover-leaver identity lifecycle operates in Okta, what is automated versus manual, and what evidence each step produces. It is written for the IT Operations team and any auditor reviewing our identity controls..
 It covers the three main lifecycle events:
 - Joiners: new employees entering the organisation
 - Movers: existing employees changing departments or roles
 - Leavers: employees leaving the organisation
 
 The objective is to ensure that users receive the correct access when they join, lose access that is no longer required when they move, and have all access removed promptly when they leave.
-
 This implementation was completed in an Okta Integrator Free Plan environment using a fictional banking organisation.
 
 ## 2. Scope
@@ -38,14 +37,15 @@ The applications used in this lab are Okta Bookmark Apps. They represent busines
 ---
 ## 3. Roles and Responsibilities
 
- Role                                   Responsibility 
-
- HR or authorised manager | Confirms the employee’s start date, department change, or departure 
- IAM administrator        | Creates, updates, deactivates, and reviews user identities 
- Help Desk administrator  | Assists users with password reset and authentication-factor issues 
- Super Administrator      | Maintains Okta configuration, policies, group rules, applications, and administrative roles 
- Line manager             | Confirms that the user’s department and required access are correct 
- Security or audit team   | Reviews Okta System Log evidence and lifecycle-control effectiveness 
+ |Role                     |                                  Responsibility                                             |
+ |-------------------------|---------------------------------------------------------------------------------------------|
+ |HR or authorised manager | Confirms the employee’s start date, department change, or departure                         |
+ |IAM administrator        | Creates, updates, deactivates, and reviews user identities                                  |
+ |Help Desk administrator  | Assists users with password reset and authentication-factor issues                          |
+ |Super Administrator      | Maintains Okta configuration, policies, group rules, applications, and administrative roles |
+ |Line manager             | Confirms that the user’s department and required access are correct                         |
+ |Security or audit team   | Reviews Okta System Log evidence and lifecycle-control effectiveness                        |
+ |-------------------------|---------------------------------------------------------------------------------------------|
 
 In this lab, the IAM administrator performs the HR-triggered profile changes manually. In a production environment, the changes would normally originate from an authoritative HR system.
 ---
@@ -53,326 +53,94 @@ In this lab, the IAM administrator performs the HR-triggered profile changes man
 ## 4. Design Principles
 
 ### 4.1 Group-based application assignment
-Applications must be assigned to groups rather than directly to individual users.
-
-The approved mappings are:
-
-  Application       Assigned group 
- 
- Meridian Intranet | `All-Staff` 
- OriginateCloud    | `Dept-Lending` 
- PaySuite          | `Dept-Payments` 
-
-Direct user-to-application assignments are not permitted because they are difficult to review, scale, and remove consistently.
-Group-based assignment ensures that access changes automatically when a user enters or leaves a group.
+Applications are assigned to groups, never to individual users. People flow in and out of groups; the group-to-app wiring never changes. This makes the directory readable, auditable, and scalable.
 
 ### 4.2 Attribute-driven group membership
-Department group membership is calculated from the user’s Okta profile.
-
-The following rules are used:
-
-| Rule            | Condition                    | Result                     |
-|-----------------|------------------------------|----------------------------| 
-| `Rule-Lending`  | Department equals `Lending`  | Add user to `Dept-Lending` |
-| `Rule-Payments` | Department equals `Payments` | Add user to `Dept-Payments`|
-| `Rule-AllStaff` | Department is not empty      | Add user to `All-Staff`    |
+Group membership is computed from identity attributes (department) via group rules, not clicked by admins. When HR updates a user's department, access changes automatically.
 
 ### 4.3 Least privilege
-Users receive only the access required for their current department.
+Users receive only the access required for their current department. 
 When a user changes department, the previous department access must be removed rather than accumulated.
 Administrative access also follows least privilege. Help Desk personnel receive only the Help Desk Administrator role and must not receive Super Administrator permissions unless formally authorised.
-
-### 4.4 Auditability
-Every lifecycle action must be verifiable through the Okta System Log.
-
-Evidence should identify:
-- The action performed
-- The affected user
-- The administrator or system process that performed the action
-- The date and time
-- Group-membership changes
-- Application-assignment changes
-- Account-status changes
 
 ---
 
 ## 5. Joiner Procedure
-
 ### 5.1 Trigger
+HR creates the user in the HR system (or manually in Okta during onboarding).
 
-The joiner process begins when HR or an authorised manager confirms that a new employee has been approved to start work.
+#### 5.2 Who creates the user
+Production: HR system pushes the user via SCIM/API.
+Lab: Admin creates the user manually in Directory → People → Add person.
 
-The request should include:
+### 5.3 Required attributes
+First name, last name
+Username / email
+Department (exact spelling: Lending or Payments)
+Password (admin-set in lab; activation email in production)
 
-- First name
-- Last name
-- Corporate username or email address
-- Department
-- Job title, where applicable
-- Start date
-- Line manager
-- Employment status
+### 5.4 What happens automatically
+Rule-AllStaff fires: user joins All-Staff group (birthright access).
+Rule-Lending or Rule-Payments fires: user joins the appropriate department group.
+App assignments appear automatically:
+All-Staff → Meridian Intranet
+Dept-Lending → OriginateCloud
+Dept-Payments → PaySuite
 
-### 5.2 Preconditions
-
-Before creating the user, the IAM administrator must verify that:
-
-- The employee has been approved by HR
-- The username is unique
-- The department value is valid
-- The required group rules are active
-- Applications are assigned to groups rather than directly to users
-
-### 5.3 Procedure
-
-1. Sign in to the Okta Admin Console.
-
-2. Navigate to:
-
-   `Directory → People → Add person`
-
-3. Enter the employee’s identity information.
-
-4. Configure the username using the approved corporate naming convention.
-
-5. Set the employee’s Department field to the correct approved value, such as:
-
-   - `Lending`
-   - `Payments`
-
-6. Save the user.
-
-7. Allow the active group rules to evaluate the profile.
-
-8. Confirm that the user has been added automatically to:
-
-   - `All-Staff`
-   - The appropriate department group
-
-9. Confirm that the correct applications have been assigned automatically.
-
-10. Ask the user to complete account activation and MFA enrolment.
-
-### 5.4 Expected automated outcome
-
-For a Lending employee:
-
-- The user is added to `All-Staff`
-- The user is added to `Dept-Lending`
-- Meridian Intranet is assigned
-- OriginateCloud is assigned
-- PaySuite is not assigned
-
-For a Payments employee:
-
-- The user is added to `All-Staff`
-- The user is added to `Dept-Payments`
-- Meridian Intranet is assigned
-- PaySuite is assigned
-- OriginateCloud is not assigned
-
-### 5.5 Validation
-
-The IAM administrator must verify:
-
-- The user account is active
-- The Department field is correct
-- Group memberships are rule-managed
-- No applications were assigned directly to the user
-- The user sees only the expected application tiles
-- MFA enrolment is required
-
-### 5.6 Evidence
-
-Capture and retain:
-
-- User-profile screenshot
-- Group-membership screenshot
-- End-user dashboard showing assigned applications
-- System Log events showing:
-  - User creation
-  - Group membership additions
-  - Application assignments
-  - MFA enrolment activity, where available
-
-Store evidence in:
+#### 5.5 Evidence produced
+Screenshot of user's dashboard showing correct tiles
+Screenshot of user's group memberships page (rule-managed)
 
 `evidence/01-joiner/`
 
 ---
-
 ## 6. Mover Procedure
 
 ### 6.1 Trigger
-
 The mover process begins when HR or an authorised manager confirms that an employee has changed department or role.
 
-The request should include:
-
-- Employee name
-- Current department
-- New department
-- Effective date
-- Manager approval
-- Any exceptional access requirements
-
 ### 6.2 Risk addressed
-
 The mover process is designed to prevent privilege creep.
-
 Privilege creep occurs when users receive access for a new role but retain access from previous roles that is no longer required.
-
 The expected outcome is a replacement of role access, not an accumulation of access.
 
-### 6.3 Procedure
+### 6.3 The single attribute change
+Change the user's Department attribute from one value to another (e.g., Lending → Payments).
 
-1. Sign in to the Okta Admin Console.
+### 6.4 What revokes and grants automatically
+Rule-Lending revokes: user leaves Dept-Lending group → OriginateCloud access removed.
+Rule-Payments grants: user joins Dept-Payments group → PaySuite access granted.
+Rule-AllStaff remains: user stays in All-Staff → Meridian Intranet access preserved.
+Critical: This is a reset-not-accumulate pattern. Old access is revoked automatically — this is the step that prevents privilege creep.
 
-2. Navigate to:
-
-   `Directory → People`
-
-3. Search for and open the employee’s profile.
-
-4. Select **Edit**.
-
-5. Change the Department field from the old department to the new approved department.
-
-   Example:
-
-   `Lending → Payments`
-
-6. Save the profile.
-
-7. Allow Okta group rules to re-evaluate the user.
-
-8. Confirm that the user is removed automatically from the previous department group.
-
-9. Confirm that the user is added automatically to the new department group.
-
-10. Confirm that the old department application is revoked.
-
-11. Confirm that the new department application is assigned.
-
-12. Confirm that birthright access, such as Meridian Intranet, remains available.
-
-### 6.4 Expected automated outcome
-
-For a move from Lending to Payments:
-
-- Removal from `Dept-Lending`
-- Addition to `Dept-Payments`
-- Removal of OriginateCloud
-- Assignment of PaySuite
-- Continued membership in `All-Staff`
-- Continued access to Meridian Intranet
-
-For a move from Payments to Lending:
-
-- Removal from `Dept-Payments`
-- Addition to `Dept-Lending`
-- Removal of PaySuite
-- Assignment of OriginateCloud
-- Continued membership in `All-Staff`
-- Continued access to Meridian Intranet
-
-### 6.5 Validation
-
-The IAM administrator must verify:
-
-- The Department field contains the new approved value
-- The user is no longer in the previous department group
-- The user is in the new department group
-- The previous application is no longer available
-- The new application is available
-- Birthright access remains unchanged
-- All group memberships remain rule-managed
-- No manual application assignment was introduced
-
-### 6.6 Evidence
-
-Capture and retain:
-
-- Updated user profile
-- Updated group memberships
-- User dashboard after the move
-- System Log events showing:
-  - Profile update
-  - Previous group membership removal
-  - New group membership addition
-  - Previous application revocation
-  - New application assignment
-
-Store evidence in:
+### 6.5 Evidence produced
+Before/after screenshots of user's dashboard
+Screenshot of group memberships page showing swap
 
 `evidence/02-mover/`
 
 ---
 
 ## 7. Leaver Procedure
-
 ### 7.1 Trigger
+HR marks the user as terminated in the HR system (or admin initiates offboarding in Okta).
 
-The leaver process begins when HR confirms that an employee’s employment has ended.
+### 7.2 Action
+Deactivate the user in Directory → People → [User] → More Actions → Deactivate.
+Why deactivate, not delete or suspend:
+Deactivate is terminal: access dies, sessions end, but the account and audit trail remain. This is the correct action for termination.
+Suspend is reversible: suitable for sabbatical, parental leave, or investigation — not for leavers.
+Delete destroys the audit trail, which is a compliance finding.
 
-The request should include:
+### 7.3 What dies automatically
+All active sessions are killed immediately.
+All app assignments are revoked.
+User cannot log in.
+Account remains in directory with Deactivated status for audit history.
 
-- Employee name
-- Username
-- Termination date and time
-- Whether the departure is immediate or scheduled
-- Manager or HR approval
-- Any legal-hold or investigation requirements
-
-### 7.2 Required action
-
-The user account must be deactivated.
-
-The account must not be deleted because deletion may remove information required for audit and investigation.
-
-Suspension should not normally be used for a permanent leaver because suspension is intended as a reversible temporary restriction.
-
-Appropriate uses for suspension may include:
-
-- Temporary leave
-- Investigation
-- Extended absence
-- Short-term access freeze
-
-### 7.3 Procedure
-
-1. Sign in to the Okta Admin Console.
-
-2. Navigate to:
-
-   `Directory → People`
-
-3. Search for and open the user.
-
-4. Confirm the user’s identity and termination instruction.
-
-5. Select:
-
-   `More Actions → Deactivate`
-
-6. Confirm the deactivation.
-
-7. Verify that the account status changes to **Deactivated**.
-
-8. Attempt to sign in using the deactivated account or otherwise confirm that authentication is blocked.
-
-9. Review the user’s application and group access.
-
-10. Review the System Log for the deactivation event.
-
-### 7.4 Expected automated outcome
-
-Following deactivation:
-
-- The user can no longer sign in
-- Active sessions are terminated
-- Application access is removed
-- The account remains visible for audit purposes
+### 7.4 Evidence produced
+Screenshot of failed login attempt
+Screenshot of user's profile showing Deactivated status
 - The System Log records the administrator, user, action, and timestamp
 
 ### 7.5 Validation
@@ -386,17 +154,6 @@ The IAM administrator must verify:
 - The System Log contains the deactivation event
 - The action occurred within the organisation’s required offboarding timeframe
 
-### 7.6 Evidence
-
-Capture and retain:
-
-- User account showing Deactivated status
-- Failed login attempt
-- System Log deactivation event
-- Application-access removal evidence, where available
-
-Store evidence in:
-
 `evidence/03-leaver/`
 
 ---
@@ -406,13 +163,10 @@ Store evidence in:
 ### 8.1 MFA enrolment
 
 Okta Verify is enabled as an authenticator.
-
 Users are required to enrol in MFA when accessing the environment.
-
 MFA is enforced at the identity-provider level so that authentication controls can be applied consistently across all connected applications.
 
 The IAM administrator must periodically verify that:
-
 - Okta Verify remains active
 - The enrolment policy remains enabled
 - Required users cannot bypass enrolment
@@ -421,7 +175,6 @@ The IAM administrator must periodically verify that:
 ### 8.2 Password policy
 
 The configured password policy includes:
-
 - Minimum password length of at least 12 characters
 - Uppercase character requirement
 - Lowercase character requirement
@@ -488,14 +241,12 @@ Super Administrator accounts must:
 Help Desk staff receive the Help Desk Administrator role.
 
 This role may be used to:
-
 - Search for users
 - Reset passwords
 - Reset authentication factors
 - Assist with account-recovery issues
 
 Help Desk administrators must not be able to:
-
 - Modify group rules
 - Configure applications
 - Change security policies
@@ -505,9 +256,7 @@ Help Desk administrators must not be able to:
 ### 9.3 Administrative review
 
 Administrative-role assignments should be reviewed regularly.
-
 The review should confirm:
-
 - Each administrator still requires the role
 - The role remains appropriate for the person’s duties
 - No unnecessary Super Administrator assignments exist
@@ -532,7 +281,6 @@ For each lifecycle event, evidence should include:
 - Account-status changes
 
 Recommended repository structure:
-
 ```text
 evidence/
 ├── 01-joiner/
