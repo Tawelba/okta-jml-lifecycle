@@ -39,23 +39,5 @@ production, the attribute changes I made by hand arrive from the HR system.
 The automation, policies, and audit trail are real Okta
 
 ----
-Architecture
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   HR Attribute  │────▶│   Group Rules   │────▶│  Group Membership│
-│  (department)   │     │ (Rule-Lending,  │     │ (Dept-Lending,   │
-│                 │     │  Rule-Payments, │     │  Dept-Payments,  │
-│                 │     │  Rule-AllStaff) │     │  All-Staff)      │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                        │
-                                                        ▼
-                                              ┌─────────────────┐
-                                              │ App Assignments │
-                                              │ (OriginateCloud,│
-                                              │  PaySuite,      │
-                                              │  Meridian       │
-                                              │  Intranet)      │
-                                              └─────────────────┘
 
-
-----                                              
 Built by:Shaibu Fuseini  https://www.linkedin.com/in/shaibu-fuseini
